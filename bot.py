@@ -53,6 +53,7 @@ LIFE_PATH_NUMBERS = {
     }
 }
 
+
 def calculate_life_path_number(date_str: str) -> tuple:
     """Вычисляет число жизненного пути из даты рождения"""
     try:
@@ -61,42 +62,43 @@ def calculate_life_path_number(date_str: str) -> tuple:
         day = date_obj.day
         month = date_obj.month
         year = date_obj.year
-        
+
         # Складываем все цифры
         total = sum(int(digit) for digit in str(day) + str(month) + str(year))
-        
+
         # Продолжаем сворачивать до однозначного числа
         calculation_steps = [f"Складываем: {' + '.join(str(day) + ' + ' + str(month) + ' + ' + str(year))} = {total}"]
-        
+
         while total > 9:
             digits = [int(d) for d in str(total)]
             new_total = sum(digits)
             calculation_steps.append(f"Сворачиваем еще раз: {' + '.join(str(d) for d in digits)} = {new_total}")
             total = new_total
-        
+
         return total, calculation_steps
     except ValueError:
         return None, []
 
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик команды /start"""
     welcome_text = (
-        "Текст 1:\n"
-        "Привет! Я телеграмм-бот «Путеводное Число»🔮\n"
-        "Ты хочешь узнать, что скажут звезды? 🌠\n\n"
-        "А я расскажу то, что знают числа! Я помогу тебе рассчитать твое Число Жизненного Пути — сакральный код твоей судьбы.\n\n"
-        "Просто введи свою дату рождения в формате ДД.ММ.ГГГГ\n"
+        "<b>Привет! Я телеграмм-бот «Путеводное Число»🔮</b>\n"
+        "<b>Ты хочешь узнать, что скажут звезды? 🌠</b>\n\n"
+        "А я расскажу то, что знают числа! Я помогу тебе рассчитать твое <b>Число Жизненного Пути</b> — сакральный код твоей судьбы.\n\n"
+        "Просто <b>введи свою дату рождения в формате ДД.ММ.ГГГГ</b>\n"
         "(например, 01.01.2000), и я раскрою его значение.\n\n"
         "Вперед, к познанию себя! ✨"
     )
-    
-    await update.message.reply_text(welcome_text)
+
+    await update.message.reply_text(welcome_text, parse_mode='HTML')
     context.user_data['awaiting_date'] = True
+
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик текстовых сообщений"""
     user_message = update.message.text.strip()
-    
+
     # Проверяем, ожидаем ли мы дату
     if context.user_data.get('awaiting_date', False):
         # Проверяем формат даты
@@ -104,26 +106,22 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if re.match(date_pattern, user_message):
             # Вычисляем число жизненного пути
             life_path_number, steps = calculate_life_path_number(user_message)
-            
+
             if life_path_number:
                 # Получаем описание числа
                 number_info = LIFE_PATH_NUMBERS.get(life_path_number)
-                
+
                 if number_info:
                     response_text = (
-                        "Текст 2:\n"
-                        "🔮Твое послание от чисел🔮\n\n"
-                        f"📅 Дата: {user_message}\n"
-                        f"🔢 Число Жизненного Пути: #{life_path_number}\n\n"
-                        f"Олицетворение: [{number_info['title']}]\n"
-                        f"[текст — обозначение числа (жизнь, человек)]\n\n"
-                        f"👋 Это число — твой ключ. Храни его!\n\n"
-                        "───────────────────────\n\n"
-                        f"<b>{number_info['title']}</b>\n\n"
-                        f"{number_info['life']}\n\n"
-                        f"{number_info['person']}"
+                        "🔮<b>Твое послание от чисел</b>🔮\n\n"
+                        f"📅 <b>Дата:</b> {user_message}\n"
+                        f"🔢 <b>Число Жизненного Пути:</b> #{life_path_number}\n\n"
+                        f"<b>Олицетворение:</b> {number_info['title']}\n\n"
+                        f"<b>Жизнь:</b> {number_info['life'].replace('Жизнь: ', '')}\n\n"
+                        f"<b>Человек:</b> {number_info['person'].replace('Человек: ', '')}\n\n"
+                        f"👋 Это число — твой ключ. Храни его!"
                     )
-                    
+
                     await update.message.reply_text(response_text, parse_mode='HTML')
                     context.user_data['awaiting_date'] = False
                 else:
@@ -146,25 +144,27 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Чтобы узнать свое Число Жизненного Пути, отправьте команду /start"
         )
 
+
 def main():
     """Запуск бота"""
     # Получаем токен из переменной окружения
     token = os.getenv('BOT_TOKEN')
-    
+
     if not token:
         print("❌ Ошибка: не найден BOT_TOKEN в переменных окружения!")
         return
-    
+
     # Создаем приложение
     application = Application.builder().token(token).build()
-    
+
     # Добавляем обработчики
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    
+
     # Запускаем бота
     print("🤖 Бот запущен!")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
+
 
 if __name__ == '__main__':
     main()
